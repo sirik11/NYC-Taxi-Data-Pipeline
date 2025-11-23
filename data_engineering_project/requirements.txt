@@ -1,0 +1,9 @@
+# Core Python packages required to run the pipeline.
+matplotlib>=3.5
+pandas>=1.4  # optional but recommended for easier data manipulation
+
+# Optional dependencies for processing real Parquet files.  These packages
+# are not strictly required and may not be installable in restricted
+# environments.  When available, they enable reading Parquet data directly.
+pyarrow>=8.0
+fastparquet>=0.8
