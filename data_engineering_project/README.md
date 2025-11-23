@@ -1,111 +1,23 @@
-# NYC Taxi Data Engineering Pipeline Project
+Motivation
+The New York City Taxi & Limousine Commission publishes detailed trip records every month
+nyc.gov
+. These datasets include pick‑up and drop‑off times, passenger counts, trip distances, fares and payment types, and in 2025 they even introduced a congestion pricing fee column
+nyc.gov
+. Because the data is stored in large Parquet files
+nyc.gov
+, working with it requires some engineering know‑how.
+Given my background in AWS, GCP, infrastructure automation and big‑data processing, I wanted to create a portfolio project that demonstrates my ability to build an end‑to‑end data pipeline on a realistic dataset. The NYC taxi data was the perfect choice because it’s public, voluminous and rich with temporal and financial attributes. Building a pipeline around it allowed me to showcase data ingestion, transformation, warehousing, orchestration, infrastructure‑as‑code and basic analytics.
+What I built
+Data ingestion – I wrote a script to download the January 2025 yellow‑cab Parquet file from the TLC’s official feed. Because I knew some environments wouldn’t have network access or the required Parquet libraries, I added a fallback that generates a synthetic dataset mimicking the real schema. This ensures the pipeline runs anywhere.
+Data processing – I cleaned the raw data by removing invalid rows (e.g., trips with non‑positive distances) and derived a trip_duration_minutes column. I aggregated metrics such as number of trips, average passenger count, average distance, total fare amount and average duration by day and vendor. When pandas was available I used it; otherwise I implemented the logic with pure Python for portability.
+Data warehousing – To simulate a warehouse, I loaded the cleaned and aggregated data into a SQLite database with two tables: trips (detailed records) and trip_summary (aggregated metrics). The structure is easily adaptable to a warehouse like Snowflake, Redshift or BigQuery.
+Analytics and visualisation – Using Matplotlib, I produced charts showing daily trip volumes, the distribution of trip distances and the distribution of fare amounts. These visualisations help communicate key insights derived from the data.
+Orchestration and IaC – I created an Airflow DAG to orchestrate the ingestion, processing, loading and visualisation steps, and I drafted Terraform scripts to provision an S3 bucket, an EMR cluster and an RDS database on AWS. Although I didn’t execute these in this environment, including them demonstrates my familiarity with production‑grade orchestration and cloud deployment.
+Why I designed it this way
+Realism and reproducibility – Targeting a public dataset and handling Parquet files mirrors real‑world challenges, while the synthetic fallback ensures the project can run in any environment.
+Modularity – Each stage (ingest, process, load, visualise) lives in its own script, making the pipeline easier to understand, test and extend.
+Minimal dependencies – I relied mostly on Python’s standard library and Matplotlib, with pandas and pyarrow being optional. This increases portability.
+Cloud‑readiness – Including an Airflow DAG and Terraform scripts shows how the pipeline can be orchestrated and deployed in the cloud.
+What I achieved
+With this project I proved that I can ingest large, semi‑structured datasets, clean and transform them, design appropriate schemas, automate loading into a warehouse, produce meaningful analytics and communicate the results through charts and documentation. It also demonstrates my ability to use orchestration and infrastructure tools to transition from a local proof‑of‑concept to a cloud‑ready pipeline.
 
-This project demonstrates how to build a complete data engineering pipeline — from ingesting raw data to generating insights — using publicly available taxi‑trip data.  It is designed as an end‑to‑end showcase of typical data‑engineering tasks and tooling.  The pipeline can be run locally, but the repository also includes examples of how to deploy it in the cloud with orchestration and infrastructure‑as‑code (Terraform) to highlight production‑ready patterns.
-
-## Overview
-
-The goal is to build a reusable pipeline for processing New York City taxi trip data.  The pipeline performs the following high‑level stages:
-
-1. **Data ingestion** – raw trip data are downloaded from the official Taxi & Limousine Commission data feed or generated synthetically for local testing.  If a remote download is desired, the script pulls monthly Parquet files from the TLC website and converts them to a CSV format for easier manipulation.  When running in a restricted environment or when Parquet dependencies are unavailable, the script falls back to generating a synthetic dataset that mimics the schema of the real taxi data.  The resulting dataset is stored in `data/raw`.
-2. **Data processing (ETL)** – the raw data are cleaned and enriched.  In this step the pipeline removes records with missing or impossible values, derives additional columns (such as trip duration), and aggregates metrics at the daily and vendor‑level.  The processed dataset is saved in `data/processed` as a CSV file.
-3. **Data warehouse loading** – using SQLite as a lightweight relational database, the processed data are loaded into a local database.  This step illustrates how you would load data into a warehouse such as BigQuery or Snowflake.  The database lives in the `database/` directory and contains two tables: a detailed trips table and an aggregated summary table.
-4. **Analytics and visualization** – basic dashboards are generated to visualize trends in trip counts, distances and fares.  Charts are created with Matplotlib and stored in `reports/plots`.  Although this project uses static images, the same code can be adapted to feed BI tools such as Tableau, Looker or Power BI.
-5. **Orchestration (Airflow)** – an example Airflow DAG is included in the `airflow/` folder.  When placed inside an Airflow environment, the DAG orchestrates each stage of the pipeline — ingestion, processing, loading and visualization — as individual tasks.
-6. **Infrastructure as code (Terraform)** – the `terraform/` directory contains a minimal Terraform configuration showing how you might provision AWS resources (an S3 bucket, an EMR cluster and an RDS database) for a production deployment of this pipeline.  These scripts are illustrative only and require valid AWS credentials to run.
-
-The repository emphasises reproducibility and clarity.  Every step is encapsulated in a Python script under `src/` so that it can be run independently or orchestrated by Airflow.
-
-## Prerequisites
-
-* **Python 3.9+** – the scripts rely only on built‑in Python libraries (`csv`, `datetime`, `sqlite3`, `random`, etc.) and `matplotlib`.  If you wish to process real Parquet data you will need the optional `pyarrow` library installed.
-* **Matplotlib** – used to generate the charts.  It is included in the default environment on most systems but can be installed with `pip install matplotlib` if required.
-* **SQLite** – included in the Python standard library via the `sqlite3` module.
-* Optional: **Apache Airflow** and **Terraform** if you want to run the orchestration and infrastructure examples.
-
-## Repository structure
-
-```
-data_engineering_project/
-├── README.md               – this file
-├── data/
-│   ├── raw/                – raw input data (downloaded or synthetic)
-│   └── processed/          – cleaned and aggregated data
-├── database/
-│   └── taxi_trips.db       – SQLite database created by the loader script
-├── reports/
-│   └── plots/              – charts generated from the processed data
-├── diagrams/
-│   └── architecture_diagram.png – visual overview of the pipeline
-├── src/
-│   ├── data_ingestion.py   – download or generate raw data
-│   ├── data_processing.py  – clean and aggregate data
-│   ├── database_loader.py  – load processed data into SQLite
-│   ├── dashboard.py        – create charts from the data
-│   └── pipeline.py         – orchestrate all steps end to end
-├── airflow/
-│   └── taxi_data_dag.py    – example Airflow DAG
-├── terraform/
-│   ├── main.tf             – sample Terraform configuration
-│   └── variables.tf        – variable definitions for Terraform
-├── requirements.txt        – Python dependencies
-└── .gitignore              – files to ignore in version control
-```
-
-## Getting started
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/your‑username/nyc‑taxi‑data‑pipeline.git
-   cd nyc‑taxi‑data‑pipeline/data_engineering_project
-   ```
-
-2. **Install dependencies** (optional)
-
-   The scripts rely only on Python’s standard library and Matplotlib.  If you plan to process Parquet files directly, install `pyarrow`:
-
-   ```bash
-   pip install matplotlib pyarrow
-   ```
-
-3. **Run the pipeline end‑to‑end**
-
-   Execute the pipeline driver script.  It will download or generate raw data, perform the ETL process, load the results into a SQLite database and produce charts in the `reports/plots` folder.
-
-   ```bash
-   python src/pipeline.py
-   ```
-
-   If the environment cannot download the TLC Parquet data or lacks the `pyarrow` dependency, the ingestion script will automatically generate a synthetic dataset that mirrors the schema of the real taxi data.  You can also force synthetic data generation by setting the `--generate-synthetic` flag when invoking the ingestion script.
-
-4. **Explore the results**
-
-   * Inspect the processed CSV file in `data/processed/` to see the aggregated metrics.
-   * Query the SQLite database in `database/taxi_trips.db` using any SQLite client.
-   * View the charts in `reports/plots`.  They provide quick insights into trip volume over time and the distribution of trip distances and fares.
-
-5. **Optional: Run with Airflow**
-
-   If you have Airflow installed and configured, copy the DAG file `airflow/taxi_data_dag.py` into your Airflow DAGs folder.  Start the Airflow scheduler and webserver, then trigger the `taxi_data_pipeline` DAG from the UI.  Each task corresponds to one of the scripts in `src/`.
-
-6. **Optional: Deploy to AWS with Terraform**
-
-   The `terraform/` directory contains a simplified Terraform configuration that provisions:
-
-   * An S3 bucket for storing raw and processed data.
-   * An EMR cluster to run Spark jobs (for large‑scale processing).
-   * An RDS PostgreSQL instance to act as a data warehouse.
-
-   Before running Terraform, set the required variables in `terraform/variables.tf` and initialise the working directory with `terraform init`.  Then run `terraform apply` to provision the resources.  **Note:** Running Terraform scripts requires valid AWS credentials and may incur costs.
-
-## Presenting this project
-
-When presenting this project in an interview, consider the following talking points:
-
-* **Problem statement:** Explain that New York City’s Taxi & Limousine Commission publishes high‑volume trip data and that a data engineer must build a pipeline to make this data useful for analysts.  Emphasise the business value of understanding trends in ride volume, trip distances and revenue.
-* **Architecture overview:** Show the architecture diagram (provided in `diagrams/architecture_diagram.png`) to give a high‑level view of the pipeline components.  Walk through each stage: ingestion, processing, data warehouse loading and analytics.  Mention how orchestration and IaC play a role in real‑world deployments.
-* **Challenges and decisions:** Discuss why Parquet is chosen for the raw data format (efficient storage and compression) and why the example falls back to CSV for ease of local use.  Talk about handling missing values, validating data quality and designing schemas for both the raw and transformed data.
-* **Scaling considerations:** Note that although the example uses SQLite, the same pipeline can be directed to Snowflake, BigQuery or Redshift.  Describe how the Terraform scripts illustrate the infrastructure required for a cloud deployment and how Airflow would orchestrate the workflow.
-* **Further enhancements:** Suggest extensions such as adding streaming ingestion via Kafka, integrating data quality tools like Great Expectations, or implementing a CI/CD pipeline using GitHub Actions.  You can also mention the possibility of building dashboards in BI tools for interactive analysis.
-
-By explaining both the technical details and the strategic considerations, you will demonstrate a comprehensive understanding of what it means to build and operate reliable data pipelines.
